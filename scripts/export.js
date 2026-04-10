@@ -323,17 +323,22 @@ async function exportMarkdown(inputPath, fileType = 'pdf', options = {}) {
   // 解析路径
   const parsed = path.parse(inputPath);
   if (parsed.ext.toLowerCase() !== '.md') {
-    throw new Error(`输入文件必须是 .md 文件: ${inputPath}`);
+    if (!inputPath) {
+    throw new Error('输入文件路径未定义或为空。');
+  }
+  throw new Error(`输入文件必须是 .md 文件: ${inputPath}`);
   }
 
   // 输出路径：同目录、同文件名、不同扩展名
-  const outputPath = path.join(parsed.dir, parsed.name + '.' + fileType);
+  console.log('Debug - Parsed directory:', parsed.dir, 'Parsed name:', parsed.name, 'File type:', fileType);
+const outputPath = path.join(parsed.dir, parsed.name + '.' + fileType);
 
   // 读取 Markdown
   if (!fs.existsSync(inputPath)) {
     throw new Error(`文件不存在: ${inputPath}`);
   }
-  const markdown = fs.readFileSync(inputPath, 'utf-8');
+  console.log('Debug - Reading file:', inputPath);
+const markdown = fs.readFileSync(inputPath, 'utf-8');
 
   // 渲染为 HTML
   let bodyHtml;
@@ -377,7 +382,12 @@ async function exportMarkdown(inputPath, fileType = 'pdf', options = {}) {
     await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 2 });
 
     // 写入临时 HTML
-    tmpHtml = path.join(os.tmpdir(), `markdown-export-${Date.now()}-${process.pid}.html`);
+    console.log('Debug - Temp dir:', os.tmpdir());
+const tempDir = os.tmpdir();
+      if (!tempDir) {
+        throw new Error('无法定位系统临时目录。请检查系统配置。');
+      }
+      tmpHtml = path.join(tempDir, `markdown-export-${Date.now()}-${process.pid}.html`);
     fs.writeFileSync(tmpHtml, fullHtml, 'utf-8');
 
     // 加载页面
@@ -444,6 +454,11 @@ async function main() {
   if (args.length < 1) {
     console.error('用法: node export.js <input.md> [pdf|png|jpg]');
     console.error('示例: node export.js README.md pdf');
+    process.exit(1);
+  }
+
+  if (!args[0]) {
+    console.error('错误：缺少输入文件参数。请指定 Markdown 文件路径。');
     process.exit(1);
   }
 
